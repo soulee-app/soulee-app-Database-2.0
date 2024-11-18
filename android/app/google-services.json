@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "1029501106810",
+    "project_id": "soulee-database",
+    "storage_bucket": "soulee-database.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1029501106810:android:ded65dcd9b625154eb19c3",
+        "android_client_info": {
+          "package_name": "com.example.avater"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDvVk17aqGDPLVj-Qkif15FDEqi5FFBoDU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1029501106810:android:5c9b1de7919b5808eb19c3",
+        "android_client_info": {
+          "package_name": "com.soulee.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDvVk17aqGDPLVj-Qkif15FDEqi5FFBoDU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1029501106810:android:00acf6009fd72001eb19c3",
+        "android_client_info": {
+          "package_name": "com.soulee.signup"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDvVk17aqGDPLVj-Qkif15FDEqi5FFBoDU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
