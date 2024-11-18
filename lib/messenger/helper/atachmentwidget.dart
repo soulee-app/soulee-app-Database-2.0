@@ -19,11 +19,9 @@ class AttachmentWidget extends StatelessWidget {
     try {
       // Get the directory to save the file
       Directory? directory = await getExternalStorageDirectory();
-      if (directory == null) {
-        throw Exception('Could not get the download directory.');
-      }
 
-      String filePath = '${directory.path}/$name'; // Specify the full file path
+      String filePath =
+          '${directory?.path}/$name'; // Specify the full file path
 
       // Create a Dio instance
       Dio dio = Dio();
