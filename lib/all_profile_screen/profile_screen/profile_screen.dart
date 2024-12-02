@@ -10,6 +10,8 @@ import 'package:widget_mask/widget_mask.dart';
 import '../../widgest/custom_text.dart';
 import 'first_slide_screen.dart';
 import 'add_memory_page.dart';
+import 'package:intl/intl.dart';
+
 
 class ProfileScreen extends StatefulWidget {
   final DatabaseManager databaseManager;
@@ -56,7 +58,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _age = userData['age']?.toString() ?? _age;
         _secondaryTag = userData['secondaryTag'] ?? "Default Tag";
         _gender = userData['gender'] ?? _gender;
-        _birthday = userData['dob'] ?? _birthday;
+        //_birthday = userData['dob'] ?? _birthday;
+        _birthday = userData['dob'] != null ? DateFormat('dd/MM').format(DateTime.parse(userData['dob'])) : _birthday;
 
         // Include profileImageUrl and avatarUrl in the profile images list
         _profileImages = [
