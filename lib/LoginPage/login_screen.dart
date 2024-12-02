@@ -26,6 +26,7 @@ class _LoginScreenState extends State<LoginScreen> {
   // Check if user is already logged in
   Future<void> _checkLoginStatus() async {
     User? user = FirebaseAuth.instance.currentUser;
+
     if (user != null) {
       if (user.emailVerified) {
         final DatabaseManager databaseManager = DatabaseManager();
@@ -68,6 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (user != null && user.emailVerified) {
         final DatabaseManager databaseManager = DatabaseManager();
+        databaseManager.logIn(user);
         WidgetsBinding.instance.addPostFrameCallback((_) {
           Navigator.pushReplacement(
             context,

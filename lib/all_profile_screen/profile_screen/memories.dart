@@ -1,3 +1,4 @@
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
@@ -124,6 +125,7 @@ class _StoryPageState extends State<StoryPage> {
         automaticallyImplyLeading: false,
       ),
       body: Column(
+
         children: [
           SizedBox(
             height: pageViewHeight,

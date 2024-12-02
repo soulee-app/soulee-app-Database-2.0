@@ -8,31 +8,16 @@ import 'package:navbar/UserData.dart';
 import 'package:navbar/all_profile_screen/profile_screen/model/affliations.dart';
 
 class DatabaseManager {
-  User? getCurrentUser() {
-    return _auth.currentUser;
-  }
-
-  Future<void> signOutUser() async {
-    await _auth.signOut();
-  }
-
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  //_________________________________________________________________________________//
-  //-------------------------Codes For Handling User Data----------------------------//
-
-  // UserData class instance
-  // will be used to store user basic data locally
   UserData _userdata = UserData();
-
-  // Getter for the class variables
   UserData get userData => _userdata;
-  FirebaseStorage get storage => _storage;
+  FirebaseAuth get auth => _auth;
   FirebaseFirestore get firestore => _firestore;
 
-  // Method to sign up a user and create Firestore document
+  // Sign up a new user and create Firestore document
   Future<bool> signUp({
     required String username,
     required String name,
@@ -44,9 +29,7 @@ class DatabaseManager {
     required String password,
     File? profileImage,
   }) async {
-    bool success = false;
     try {
-      // Firebase Authentication signup
       UserCredential userCredential =
           await _auth.createUserWithEmailAndPassword(
         email: email,
@@ -55,20 +38,20 @@ class DatabaseManager {
 
       String? profileImageUrl;
 
-      // Upload profile image if provided
+      // Upload profile image
       if (profileImage != null) {
-        String uid = userCredential.user!.uid;
-        Reference ref = _storage.ref().child('profile_images/$uid');
-        UploadTask uploadTask = ref.putFile(profileImage);
-        TaskSnapshot snapshot = await uploadTask;
+        final ref =
+            _storage.ref().child('profile_images/${userCredential.user!.uid}');
+        final uploadTask = ref.putFile(profileImage);
+        final snapshot = await uploadTask;
         profileImageUrl = await snapshot.ref.getDownloadURL();
       }
 
-      // Calculate additional fields
-      int age = DateTime.now().year - dob.year;
-      String zodiacSign = _calculateZodiacSign(dob);
+      // Calculate additional details
+      final int age = DateTime.now().year - dob.year;
+      String zodiacSign = _calculateZodiacSign(dob).toString();
 
-      // Create Firestore user document
+      // Save user data to Firestore
       await _firestore.collection('users').doc(userCredential.user!.uid).set({
         'uid': userCredential.user!.uid,
         'username': username,
@@ -83,132 +66,71 @@ class DatabaseManager {
         'profile_image': profileImageUrl,
         'account_created': DateTime.now().toIso8601String(),
       });
-      success = true;
-    } catch (e) {
-      throw Exception('Failed to sign up: $e');
-    }
 
-    if (success) {
       return true;
-    } else
-      // ignore: dead_code
-      return false;
+    } catch (e) {
+      throw Exception('Sign-up failed: $e');
+    }
   }
 
-  // Method to log in a user
-  Future<void> logIn(String email, String password) async {
+  // Log in an existing user
+  Future<void> logIn(User user) async {
     try {
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
-      // Fetch user data from Firestore
-      DocumentSnapshot userDoc = await _firestore
+      // Fetch and store user data locally
+      final userDoc = await _firestore
           .collection('users')
-          .doc(userCredential.user!.uid)
+          .doc(user.uid)
           .get();
-
       if (userDoc.exists) {
-        Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
-
-        // Update local UserData instance
-        _userdata = UserData.fromMap(userData);
+        _userdata = UserData.fromMap(userDoc.data() as Map<String, dynamic>);
       } else {
         throw Exception('User document does not exist.');
       }
     } catch (e) {
-      throw Exception('Failed to log in: $e');
+      throw Exception('Login failed: $e');
     }
   }
 
-  // Method to fetch a user's data
+  Future<void> signOutUser() async => _auth.signOut();
+
+  // Fetch user data
   Future<UserData> fetchUserData(String uid) async {
     try {
-      DocumentSnapshot userDoc =
-          await _firestore.collection('users').doc(uid).get();
-
+      final userDoc = await _firestore.collection('users').doc(uid).get();
       if (userDoc.exists) {
-        Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
-        return UserData.fromMap(userData);
+        return UserData.fromMap(userDoc.data() as Map<String, dynamic>);
       } else {
-        throw Exception('User document does not exist.');
+        throw Exception('User not found');
       }
     } catch (e) {
       throw Exception('Failed to fetch user data: $e');
     }
   }
 
-  // Method to log out the user
-  Future<void> logOut() async {
-    try {
-      await _auth.signOut();
-      _userdata = UserData(); // Clear local UserData instance
-    } catch (e) {
-      throw Exception('Failed to log out: $e');
-    }
-  }
-
-  // Helper function to calculate zodiac sign in Area-51, i mean line 51
   String _calculateZodiacSign(DateTime dob) {
     final int day = dob.day;
     final int month = dob.month;
 
-    if ((month == 1 && day >= 20) || (month == 2 && day <= 18)) {
+    if ((month == 1 && day >= 20) || (month == 2 && day <= 18))
       return "Aquarius";
-    } else if ((month == 2 && day >= 19) || (month == 3 && day <= 20)) {
-      return "Pisces";
-    } else if ((month == 3 && day >= 21) || (month == 4 && day <= 19)) {
-      return "Aries";
-    } else if ((month == 4 && day >= 20) || (month == 5 && day <= 20)) {
-      return "Taurus";
-    } else if ((month == 5 && day >= 21) || (month == 6 && day <= 20)) {
-      return "Gemini";
-    } else if ((month == 6 && day >= 21) || (month == 7 && day <= 22)) {
-      return "Cancer";
-    } else if ((month == 7 && day >= 23) || (month == 8 && day <= 22)) {
-      return "Leo";
-    } else if ((month == 8 && day >= 23) || (month == 9 && day <= 22)) {
-      return "Virgo";
-    } else if ((month == 9 && day >= 23) || (month == 10 && day <= 22)) {
-      return "Libra";
-    } else if ((month == 10 && day >= 23) || (month == 11 && day <= 21)) {
+    if ((month == 2 && day >= 19) || (month == 3 && day <= 20)) return "Pisces";
+    if ((month == 3 && day >= 21) || (month == 4 && day <= 19)) return "Aries";
+    if ((month == 4 && day >= 20) || (month == 5 && day <= 20)) return "Taurus";
+    if ((month == 5 && day >= 21) || (month == 6 && day <= 20)) return "Gemini";
+    if ((month == 6 && day >= 21) || (month == 7 && day <= 22)) return "Cancer";
+    if ((month == 7 && day >= 23) || (month == 8 && day <= 22)) return "Leo";
+    if ((month == 8 && day >= 23) || (month == 9 && day <= 22)) return "Virgo";
+    if ((month == 9 && day >= 23) || (month == 10 && day <= 22)) return "Libra";
+    if ((month == 10 && day >= 23) || (month == 11 && day <= 21))
       return "Scorpio";
-    } else if ((month == 11 && day >= 22) || (month == 12 && day <= 21)) {
+    if ((month == 11 && day >= 22) || (month == 12 && day <= 21))
       return "Sagittarius";
-    } else if ((month == 12 && day >= 22) || (month == 1 && day <= 19)) {
+    if ((month == 12 && day >= 22) || (month == 1 && day <= 19))
       return "Capricorn";
-    }
     return "Unknown";
   }
 
-  // Fetch user data from Firestore
-  // will use it if needed
-  Future<void> refreshUserData() async {
-    try {
-      String uid = _auth.currentUser!.uid;
-      DocumentSnapshot userDoc =
-          await _firestore.collection('users').doc(uid).get();
-
-      if (userDoc.exists) {
-        _userdata = UserData.fromMap(userDoc.data() as Map<String, dynamic>);
-      }
-    } catch (e) {
-      print("Error refreshing user data: $e");
-    }
-  }
-
-  // Start periodic refresh
-  void startPeriodicRefresh(Duration interval) {
-    Timer.periodic(interval, (timer) async {
-      await refreshUserData();
-    });
-  }
-
-  //__________________________________________________________________________________//
-  //----------------------------Codes For Handling posts------------------------------//
-
-  //Adding new post
+  // Adding a new post
   Future<void> addPost({
     required String content,
     List<File>? mediaFiles,
@@ -217,10 +139,21 @@ class DatabaseManager {
     List<String>? pollOptions,
   }) async {
     try {
-      final userId = FirebaseAuth.instance.currentUser!.uid;
-      List<String> mediaUrls = [];
+      final userId = _auth.currentUser!.uid;
 
-      // Upload media files
+      // Fetch user details
+      final userDoc = await _firestore.collection('users').doc(userId).get();
+      if (!userDoc.exists) {
+        throw Exception('User data not found.');
+      }
+
+      final userData = userDoc.data();
+      final authorName = userData?['name'] ?? 'Unknown User';
+      final authorProfilePic = userData?['profilePic'] ?? 'assets/defImg.png';
+
+      final List<String> mediaUrls = [];
+
+      // Upload media files if provided
       if (mediaFiles != null && mediaFiles.isNotEmpty) {
         for (var file in mediaFiles) {
           final mediaUrl = await uploadMedia(file, 'posts/$userId/media');
@@ -228,9 +161,11 @@ class DatabaseManager {
         }
       }
 
-      // Prepare post data
+      // Prepare the post data
       final postData = {
         'userId': userId,
+        'authorName': authorName, // Add author's name
+        'authorProfilePic': authorProfilePic, // Add author's profile picture
         'text': content,
         'gif': gifUrl,
         'pollQuestion': pollQuestion,
@@ -239,65 +174,123 @@ class DatabaseManager {
         'timestamp': FieldValue.serverTimestamp(),
       };
 
-      // Save post data to Firestore
+      // Save the post to Firestore
       await _firestore.collection('posts').add(postData);
     } catch (e) {
       throw Exception('Failed to add post: $e');
     }
   }
 
-  // Getting posts from friends
+
+  // Fetch posts for the feed
   Future<List<Map<String, dynamic>>> fetchFeedPosts() async {
     try {
-      // Get the current user's ID from userData in DatabaseManager
-      final userId = userData.uid;
-      if (userId == null) throw Exception('User ID not found');
+      final userId = _auth.currentUser!.uid;
+      if (userId == null) throw Exception('User ID not found.');
 
-      // Fetch the friend list for the current user
+      // Fetch the user's friend list
       final friendList = await getFriendList();
       final friendIds = friendList.map((friend) => friend['friendId']).toList();
 
-      // Fetch posts for the current user and their friends
-      QuerySnapshot querySnapshot = await _firestore
+      // Fetch posts by the user and their friends
+      final querySnapshot = await _firestore
           .collection('posts')
-          .where('userId',
-              whereIn: [userId, ...friendIds]) // Current user and friends
+          .where('userId', whereIn: [userId, ...friendIds])
           .orderBy('timestamp', descending: true)
           .get();
 
-      // Map the query results to a list of post data
-      return querySnapshot.docs
-          .map((doc) => doc.data() as Map<String, dynamic>)
-          .toList();
+      final List<Map<String, dynamic>> posts = [];
+
+      for (var doc in querySnapshot.docs) {
+        final postData = doc.data();
+
+        // Fetch the user data for the post's author
+        final userDoc = await _firestore.collection('users').doc(postData['userId']).get();
+        final userData = userDoc.exists ? userDoc.data() : null;
+
+        posts.add({
+          ...postData,
+          'authorName': userData?['name'] ?? 'Unknown User',
+          'authorProfilePic': userData?['profilePic'] ?? 'assets/defImg.png',
+        });
+      }
+
+      return posts;
     } catch (e) {
       throw Exception('Failed to fetch feed posts: $e');
     }
   }
 
-  // Getting posets for current user profile
+
+  // Fetch posts for a user's profile
   Future<List<Map<String, dynamic>>> fetchProfilePosts(String userId) async {
     try {
-      QuerySnapshot querySnapshot = await _firestore
-          .collection('users')
-          .doc(userId)
-          .collection('posts')
+      // Fetch posts from the user's profile
+      final querySnapshot = await _firestore
+          .collection('posts') // Assuming posts are stored in a top-level collection
+          .where('userId', isEqualTo: userId)
           .orderBy('timestamp', descending: true)
           .get();
 
-      return querySnapshot.docs
-          .map((doc) => doc.data() as Map<String, dynamic>)
-          .toList();
+      final List<Map<String, dynamic>> posts = [];
+
+      for (var doc in querySnapshot.docs) {
+        final postData = doc.data();
+
+        // Fetch the user data for the post's author
+        final userDoc = await _firestore.collection('users').doc(userId).get();
+        final userData = userDoc.exists ? userDoc.data() : null;
+
+        posts.add({
+          ...postData,
+          'authorName': userData?['name'] ?? 'Unknown User',
+          'authorProfilePic': userData?['profilePic'] ?? 'assets/defImg.png',
+        });
+      }
+
+      return posts;
     } catch (e) {
       throw Exception('Failed to fetch profile posts: $e');
     }
   }
 
-  // Add Like on a post
+  Future<List<Map<String, dynamic>>> fetchProfileMemories(String userId) async {
+    try {
+      // Fetch memories associated with the user's profile
+      final querySnapshot = await _firestore
+          .collection('memory') // Assuming memories are stored in a top-level collection
+          .where('userId', isEqualTo: userId)
+          .orderBy('timestamp', descending: true)
+          .get();
+
+      final List<Map<String, dynamic>> memories = [];
+
+      for (var doc in querySnapshot.docs) {
+        final memoryData = doc.data();
+
+        // Fetch the user data for the memory's owner
+        final userDoc = await _firestore.collection('users').doc(userId).get();
+        final userData = userDoc.exists ? userDoc.data() : null;
+
+        memories.add({
+          ...memoryData,
+          'ownerName': userData?['name'] ?? 'Unknown User',
+          'ownerProfilePic': userData?['profilePic'] ?? 'assets/defImg.png',
+        });
+      }
+
+      return memories;
+    } catch (e) {
+      throw Exception('Failed to fetch profile memories: $e');
+    }
+  }
+
+
+
+  // Like a post
   Future<void> likePost(String postId, String userId) async {
     try {
-      DocumentReference postRef = _firestore.collection('posts').doc(postId);
-
-      // Add the user to the likes array
+      final postRef = _firestore.collection('posts').doc(postId);
       await postRef.update({
         'likes': FieldValue.arrayUnion([userId]),
       });
@@ -306,12 +299,10 @@ class DatabaseManager {
     }
   }
 
-  // Add comment on a post
+  // Add a comment to a post
   Future<void> addComment(String postId, String userId, String comment) async {
     try {
-      DocumentReference postRef = _firestore.collection('posts').doc(postId);
-
-      // Add the comment to the post's comments sub-collection
+      final postRef = _firestore.collection('posts').doc(postId);
       await postRef.collection('comments').add({
         'userId': userId,
         'comment': comment,
@@ -322,31 +313,26 @@ class DatabaseManager {
     }
   }
 
-  // Get comments of a post
+  // Fetch comments for a post
   Future<List<Map<String, dynamic>>> fetchComments(String postId) async {
     try {
-      QuerySnapshot querySnapshot = await _firestore
+      final querySnapshot = await _firestore
           .collection('posts')
           .doc(postId)
           .collection('comments')
           .orderBy('timestamp')
           .get();
 
-      return querySnapshot.docs
-          .map((doc) => doc.data() as Map<String, dynamic>)
-          .toList();
+      return querySnapshot.docs.map((doc) => doc.data()).toList();
     } catch (e) {
       throw Exception('Failed to fetch comments: $e');
     }
   }
 
-  // Delete Post (For future use)
+  // Delete a post
   Future<void> deletePost(String postId, String userId) async {
     try {
-      // Delete the post from the main posts collection
       await _firestore.collection('posts').doc(postId).delete();
-
-      // Delete the post from the user's profile posts collection
       await _firestore
           .collection('users')
           .doc(userId)
@@ -358,14 +344,14 @@ class DatabaseManager {
     }
   }
 
-  // Upload a single media file to Firebase Storage
+  // Upload media file to Firebase Storage
   Future<String> uploadMedia(File mediaFile, String folder) async {
     try {
-      String fileName =
+      final fileName =
           '${DateTime.now().millisecondsSinceEpoch}_${mediaFile.path.split('/').last}';
-      Reference ref = _storage.ref().child('$folder/$fileName');
-      UploadTask uploadTask = ref.putFile(mediaFile);
-      TaskSnapshot snapshot = await uploadTask;
+      final ref = _storage.ref().child('$folder/$fileName');
+      final uploadTask = ref.putFile(mediaFile);
+      final snapshot = await uploadTask;
       return await snapshot.ref.getDownloadURL();
     } catch (e) {
       throw Exception('Failed to upload media: $e');
@@ -376,59 +362,56 @@ class DatabaseManager {
   Future<void> uploadMemory(
       File imageFile, Map<String, dynamic> memoryData) async {
     try {
-      // Ensure the user is authenticated
-      final User? currentUser = _auth.currentUser;
-      if (currentUser == null) {
-        throw Exception('User is not authenticated.');
-      }
+      final currentUser = _auth.currentUser;
+      if (currentUser == null) throw Exception('User is not authenticated.');
 
       final userId = currentUser.uid;
 
-      // Upload image to Firebase Storage
-      String imageUrl = await uploadMedia(imageFile, 'memories/$userId');
+      // Upload image to storage
+      final imageUrl = await uploadMedia(imageFile, 'memories/$userId');
 
-      // Add image URL to memoryData
+      // Validate memoryData and add required fields
       memoryData['imageUrl'] = imageUrl;
-
-      // Add metadata
       memoryData['userId'] = userId;
       memoryData['timestamp'] = FieldValue.serverTimestamp();
+      memoryData['visibility'] = memoryData['visibility'] ?? 'Everyone'; // Default
 
-      // Save memory data under posts collection for efficient querying
-      await _firestore.collection('posts').add(memoryData);
+      // Save memory data to Firestore
+      await _firestore.collection('memory').add(memoryData);
     } catch (e) {
+      print('Error in uploadMemory: $e'); // Log error for debugging
       throw Exception('Failed to upload memory: $e');
     }
   }
 
-  // Get memory in profile page
+
   // Fetch memories for a user's profile page
-  Future<List<Map<String, dynamic>>> fetchMemories(String userId) async {
+  Future<List<Map<String, dynamic>>> fetchMemories(String userId,
+      {String visibility = 'Everyone'}) async {
     try {
-      QuerySnapshot querySnapshot = await _firestore
-          .collection('posts') // Assuming memories are stored in posts
-          .where('userId', isEqualTo: userId) // Filter by user ID
-          .where('visibility',
-              isEqualTo: 'Everyone') // Optional: filter visibility
-          .orderBy('timestamp', descending: true) // Sort by most recent
+      final querySnapshot = await _firestore
+          .collection('memory')
+          .where('userId', isEqualTo: userId)
+          .where('visibility', isEqualTo: visibility) // Optional visibility filter
+          .orderBy('timestamp', descending: true)
           .get();
 
-      // Convert the Firestore documents into a list of maps
+      // Map documents to list of memory data
       return querySnapshot.docs
           .map((doc) => doc.data() as Map<String, dynamic>)
           .toList();
     } catch (e) {
+      print('Error in fetchMemories: $e'); // Log error for debugging
       throw Exception('Failed to fetch memories: $e');
     }
   }
 
-  // Update user bio
+
+  // Update user profile bio
   Future<void> updateUserProfileBio(String bio) async {
     try {
       final userId = _auth.currentUser?.uid;
-      if (userId == null) {
-        throw Exception("User not authenticated");
-      }
+      if (userId == null) throw Exception('User not authenticated');
 
       await _firestore.collection('users').doc(userId).update({'bio': bio});
     } catch (e) {
@@ -444,16 +427,14 @@ class DatabaseManager {
   }) async {
     try {
       final userId = _auth.currentUser?.uid;
-      if (userId == null) {
-        throw Exception("User not authenticated");
-      }
+      if (userId == null) throw Exception('User not authenticated');
 
       await _firestore.collection('users').doc(userId).update({
         'music': albumName,
         'musicArtist': artistName,
         'musicImageUrl': albumImageUrl,
       });
-      refreshUserData();
+      await refreshUserData();
     } catch (e) {
       throw Exception('Failed to update music preferences: $e');
     }
@@ -466,15 +447,13 @@ class DatabaseManager {
   }) async {
     try {
       final userId = _auth.currentUser?.uid;
-      if (userId == null) {
-        throw Exception("User not authenticated");
-      }
+      if (userId == null) throw Exception('User not authenticated');
 
       await _firestore.collection('users').doc(userId).update({
         'movie': movieName,
         'movieImageUrl': movieImageUrl,
       });
-      refreshUserData();
+      await refreshUserData();
     } catch (e) {
       throw Exception('Failed to update movie preferences: $e');
     }
@@ -488,26 +467,83 @@ class DatabaseManager {
   }) async {
     try {
       final userId = _auth.currentUser?.uid;
-      if (userId == null) {
-        throw Exception("User not authenticated");
-      }
+      if (userId == null) throw Exception('User not authenticated');
 
       await _firestore.collection('users').doc(userId).update({
         'book': bookName,
         'bookAuthor': bookAuthor,
         'bookImageUrl': bookImageUrl,
       });
-      refreshUserData();
+      await refreshUserData();
     } catch (e) {
       throw Exception('Failed to update book preferences: $e');
     }
   }
 
-  // Returns data for the second slide screen in profile page
+  // Fetch data for the second slide screen
   Future<Map<String, dynamic>> fetchSecondSlideData() async {
     try {
       final userId = _auth.currentUser?.uid;
-      if (userId == null) throw Exception("User not authenticated");
+      if (userId == null) throw Exception('User not authenticated');
+
+      // Initialize return data structure
+      Map<String, dynamic> secondSlideData = {
+        'memories': [],
+        'zones': [],
+        'feedPosts': [],
+      };
+
+      // Fetch memories
+      final memoriesSnapshot = await _firestore
+          .collection('memory') // Updated to fetch from 'memory' collection
+          .where('userId', isEqualTo: userId)
+          .orderBy('timestamp', descending: true)
+          .limit(10) // Optional: Limit results for better performance
+          .get();
+
+      secondSlideData['memories'] = memoriesSnapshot.docs
+          .map((doc) => doc['imageUrl'] as String)
+          .toList();
+
+      // Fetch zones
+      final zonesSnapshot = await _firestore
+          .collection('zones') // Assume zones are stored in a central 'zones' collection
+          .where('members', arrayContains: userId) // Check if the user is a member
+          .orderBy('createdAt', descending: true)
+          .limit(10)
+          .get();
+      secondSlideData['zones'] = zonesSnapshot.docs.map((doc) {
+        return AffiliationData(
+          text1: doc['name'] as String,
+          text2: doc['description'] as String,
+          image: doc['imageUrl'] as String,
+        );
+      }).toList();
+
+      // Fetch feed posts
+      final friendList = await getFriendList(); // Fetch user's friend list
+      final friendIds = friendList.map((friend) => friend['friendId']).toList();
+      final postsSnapshot = await _firestore
+          .collection('posts')
+          .where('userId', whereIn: [userId, ...friendIds]) // User's and friends' posts
+          .orderBy('timestamp', descending: true)
+          .limit(10)
+          .get();
+      secondSlideData['feedPosts'] =
+          postsSnapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+
+      return secondSlideData;
+    } catch (e) {
+      print('Error fetching second slide data: $e'); // Log error for debugging
+      throw Exception('Failed to fetch second slide data: $e');
+    }
+  }
+
+  /*
+  Future<Map<String, dynamic>> fetchSecondSlideData() async {
+    try {
+      final userId = _auth.currentUser?.uid;
+      if (userId == null) throw Exception('User not authenticated');
 
       // Fetch memories
       final memoriesSnapshot = await _firestore
@@ -546,58 +582,28 @@ class DatabaseManager {
         'feedPosts': feedPosts,
       };
     } catch (e) {
-      throw Exception("Failed to fetch second slide data: $e");
+      throw Exception('Failed to fetch second slide data: $e');
+    }
+  }
+  */
+  // Update main tag from hobby quiz
+  Future<void> updateUserMainTag({required String mainTag}) async {
+    final userId = _auth.currentUser?.uid;
+    if (userId != null) {
+      await _firestore.collection('users').doc(userId).update({
+        'mainTag': mainTag,
+      });
     }
   }
 
-  // Codes for knot page
-
-  // Finding a knot
-  Future<Map<String, dynamic>?> fetchMatchedUser({
-    required String mainTag,
-    required List<String> compatibleTags,
-    required String currentUserGender,
-  }) async {
-    try {
-      final currentUser = FirebaseAuth.instance.currentUser;
-      if (currentUser == null) throw Exception('No current user found');
-
-      // Determine the opposite gender
-      String oppositeGender =
-          currentUserGender.toLowerCase() == "male" ? "female" : "male";
-
-      // Query Firestore for users with compatible mainTags, opposite gender, excluding the current user
-      final matchedUsersQuery = await firestore
-          .collection('users')
-          .where('mainTag', whereIn: compatibleTags)
-          .where('gender',
-              isEqualTo:
-                  oppositeGender) // just comment this line if dont want only opposite gender knot
-          .where('uid', isNotEqualTo: currentUser.uid)
-          .get();
-
-      if (matchedUsersQuery.docs.isNotEmpty) {
-        // Select a random user from the matched users
-        final matchedDocs = matchedUsersQuery.docs;
-        final randomIndex = Random().nextInt(matchedDocs.length);
-        return matchedDocs[randomIndex].data();
-      }
-
-      return null; // No matched user found
-    } catch (e) {
-      print("Error fetching matched user: $e");
-      throw Exception("Failed to fetch matched user: $e");
-    }
-  }
-
-  //Function to add friend to users friend list
+  // Add friend to the user's friend list
   Future<void> addFriend({
     required String currentUserId,
     required String friendUserId,
   }) async {
     try {
       // Add friend to current user's friend list
-      await firestore
+      await _firestore
           .collection('users')
           .doc(currentUserId)
           .collection('friends')
@@ -609,7 +615,7 @@ class DatabaseManager {
       });
 
       // Add current user to friend's friend list
-      await firestore
+      await _firestore
           .collection('users')
           .doc(friendUserId)
           .collection('friends')
@@ -627,12 +633,11 @@ class DatabaseManager {
     }
   }
 
-  // Get current users friend list
+  // Get current user's friend list
   Future<List<Map<String, dynamic>>> getFriendList() async {
     try {
-      // Ensure the user is authenticated and userData is loaded
-      final currentUser = userData;
-      if (currentUser.uid == null) {
+      final currentUser = _auth.currentUser;
+      if (currentUser == null) {
         throw Exception('User not authenticated or user data unavailable');
       }
 
@@ -652,13 +657,116 @@ class DatabaseManager {
     }
   }
 
-  //update main tag from hobby quiz
-  Future<void> updateUserMainTag({required String mainTag}) async {
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId != null) {
-      await _firestore.collection('users').doc(userId).update({
-        'mainTag': mainTag,
-      });
+  // Get matched user for Knot page
+  Future<Map<String, dynamic>?> fetchMatchedUser({
+    required String mainTag,
+    required List<String> compatibleTags,
+    required String currentUserGender,
+  }) async {
+    try {
+      final currentUser = _auth.currentUser;
+      if (currentUser == null) throw Exception('No current user found');
+
+      // Determine the opposite gender
+      final oppositeGender =
+          currentUserGender.toLowerCase() == "male" ? "female" : "male";
+
+      // Query Firestore for users with compatible mainTags and opposite gender
+      final matchedUsersQuery = await _firestore
+          .collection('users')
+          .where('mainTag', whereIn: compatibleTags)
+          //.where('gender', isEqualTo: oppositeGender)
+          .where('uid', isNotEqualTo: currentUser.uid)
+          .get();
+
+      if (matchedUsersQuery.docs.isNotEmpty) {
+        final matchedDocs = matchedUsersQuery.docs;
+        final randomIndex = Random().nextInt(matchedDocs.length);
+        return matchedDocs[randomIndex].data();
+      }
+      return null; // No matched user found
+    } catch (e) {
+      print("Error fetching matched user: $e");
+      throw Exception("Failed to fetch matched user: $e");
     }
   }
+
+  // Delete user account and all associated data
+  Future<void> deleteUserAccount() async {
+    try {
+      final currentUser = _auth.currentUser;
+      if (currentUser == null) {
+        throw Exception('No authenticated user found.');
+      }
+
+      final uid = currentUser.uid;
+
+      // Delete user's documents from Firestore
+      await _firestore.collection('users').doc(uid).delete();
+
+      // Delete associated data such as posts, memories, etc.
+      final postSnapshots = await _firestore
+          .collection('posts')
+          .where('userId', isEqualTo: uid)
+          .get();
+      for (var doc in postSnapshots.docs) {
+        await doc.reference.delete();
+      }
+
+      // Delete user authentication record
+      await currentUser.delete();
+
+      print("User account and associated data deleted successfully.");
+    } catch (e) {
+      print("Error deleting user account: $e");
+      throw Exception('Failed to delete user account: $e');
+    }
+  }
+
+  // Refresh user data manually
+  Future<void> refreshUserData() async {
+    try {
+      final uid = _auth.currentUser?.uid;
+      if (uid == null) {
+        throw Exception('User not authenticated');
+      }
+
+      final userDoc = await _firestore.collection('users').doc(uid).get();
+      if (userDoc.exists) {
+        _userdata = UserData.fromMap(userDoc.data() as Map<String, dynamic>);
+      }
+    } catch (e) {
+      print('Error refreshing user data: $e');
+      throw Exception('Failed to refresh user data');
+    }
+  }
+
+  // Periodically refresh user data
+  void startPeriodicRefresh(Duration interval) {
+    Timer.periodic(interval, (_) async {
+      try {
+        await refreshUserData();
+      } catch (e) {
+        print('Periodic refresh failed: $e');
+      }
+    });
+  }
+
+  Future<Map<String, dynamic>> fetchUserProfileData() async {
+    try {
+      // Get the current user's ID
+      final userId = _auth.currentUser?.uid;
+      if (userId == null) throw Exception("User is not authenticated.");
+
+      // Fetch the user profile data from Firestore
+      final doc = await _firestore.collection('users').doc(userId).get();
+      if (!doc.exists) throw Exception("User profile data not found.");
+
+      // Return the user data as a Map
+      return doc.data() as Map<String, dynamic>;
+    } catch (e) {
+      throw Exception("Failed to fetch user profile data: $e");
+    }
+  }
+
 }

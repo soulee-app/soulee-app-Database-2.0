@@ -51,6 +51,21 @@ class _FirstSlideScreenState extends State<FirstSlideScreen> {
   List<AffiliationData> affiliations = [];
   List<AffiliationData> loveLanguage = [];
 
+  // Music-related variables
+  String _music = "Unknown Song";
+  String _musicArtist = "Unknown Artist";
+  String _musicImageUrl = 'assets/default_music_image.jpg';
+
+// Movie-related variables
+  String _movie = "Unknown Movie";
+  String _movieImageUrl = 'assets/default_movie_image.jpg';
+
+// Book-related variables
+  String _book = "Unknown Book";
+  String _bookAuthor = "Unknown Author";
+  String _bookImageUrl = 'assets/default_book_image.jpg';
+
+
   final TextEditingController _bioController = TextEditingController();
 
   @override
@@ -61,15 +76,27 @@ class _FirstSlideScreenState extends State<FirstSlideScreen> {
 
   Future<void> _fetchUserData() async {
     try {
-      // Fetch user data from DatabaseManager
-      final userData = widget.databaseManager.userData;
+      // Fetch the latest user data from the database
+      final userId = widget.databaseManager.auth.currentUser?.uid;
+      if (userId == null) throw Exception('User is not authenticated.');
+
+      final userDoc = await widget.databaseManager.firestore
+          .collection('users')
+          .doc(userId)
+          .get();
+
+      if (!userDoc.exists) {
+        throw Exception('User document does not exist.');
+      }
+
+      final userData = userDoc.data();
 
       setState(() {
-        _bio = userData.bio ?? "Add bio";
-        _zodiacSign = userData.zodiacSign ?? "Zodiac";
+        _bio = userData?['bio'] ?? "Add bio";
+        _zodiacSign = userData?['zodiac_sign'] ?? "Zodiac";
         _zodiacImagePath = _getZodiacImagePath(_zodiacSign);
 
-        // Example affiliations
+        // Update affiliations
         affiliations = [
           AffiliationData(
             text1: _zodiacSign,
@@ -77,43 +104,55 @@ class _FirstSlideScreenState extends State<FirstSlideScreen> {
             image: _zodiacImagePath,
           ),
           AffiliationData(
-            text1: userData.spiritAnimal ?? 'Spirit Animal',
+            text1: userData?['spiritAnimal'] ?? 'Spirit Animal',
             text2: 'Spirit Animal',
             image: 'assets/Profile/Spirit Animal.png',
           ),
           AffiliationData(
-            text1: userData.element ?? 'Element',
+            text1: userData?['element'] ?? 'Element',
             text2: 'Element',
             image: 'assets/Profile/Element.png',
           ),
         ];
 
-        // Example love languages
+        // Update love languages
         loveLanguage = [
           AffiliationData(
-            text1: userData.hobby ?? 'Hobby',
+            text1: userData?['hobby'] ?? 'Hobby',
             text2: 'Hobby',
             image: 'assets/Profile/Hobby.png',
           ),
           AffiliationData(
-            text1: userData.interest ?? 'Call of the Soul',
+            text1: userData?['interest'] ?? 'Call of the Soul',
             text2: 'Call Of Soul',
             image: 'assets/Profile/Call Soul.png',
           ),
           AffiliationData(
-            text1: userData.datePreference ?? 'Preferences',
+            text1: userData?['datePreference'] ?? 'Preferences',
             text2: 'Preference',
             image: 'assets/Profile/Preferences.png',
           ),
         ];
 
-        // Example sample texts (if applicable)
-        //sampleTexts = userData.sampleTexts ?? [];
+        // Fetch and update music, movie, and book data
+        _music = userData?['music'] ?? 'Unknown Song';
+        _musicArtist = userData?['musicArtist'] ?? 'Unknown Artist';
+        _musicImageUrl = userData?['musicImageUrl'] ?? 'assets/default_music_image.jpg';
+
+        _movie = userData?['movie'] ?? 'Unknown Movie';
+        _movieImageUrl = userData?['movieImageUrl'] ?? 'assets/default_movie_image.jpg';
+
+        _book = userData?['book'] ?? 'Unknown Book';
+        _bookAuthor = userData?['bookAuthor'] ?? 'Unknown Author';
+        _bookImageUrl = userData?['bookImageUrl'] ?? 'assets/default_book_image.jpg';
       });
     } catch (e) {
       print("Error fetching user data: $e");
     }
   }
+
+
+
 
   void _openMusicHome() async {
     final selectedSong = await Navigator.push(

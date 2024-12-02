@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:navbar/DatabaseManager.dart';
@@ -33,7 +34,7 @@ class _SignupScreenState extends State<SignupScreen> {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
-      firstDate: DateTime(1900),
+      firstDate: DateTime(1960),
       lastDate: DateTime.now(),
     );
 
@@ -82,13 +83,31 @@ class _SignupScreenState extends State<SignupScreen> {
       );
       return;
     }
+    DateTime? dob;
+    try {
+      final dobParts = _dobController.text.split('/');
+      if (dobParts.length != 3) throw Exception("Invalid date format");
 
+      final day = int.parse(dobParts[0]);
+      final month = int.parse(dobParts[1]);
+      final year = int.parse(dobParts[2]);
+
+      dob = DateTime(year, month, day);
+      if (dob.isAfter(DateTime.now())) {
+        throw Exception("Date of birth cannot be in the future.");
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid date of birth.')),
+      );
+      return;
+    }
     try {
       bool isSignedUp = await _databaseManager.signUp(
         email: _emailController.text,
         password: _passwordController.text,
         name: _nameController.text,
-        dob: DateTime.parse(_dobController.text),
+        dob: dob,
         gender: _selectedGender!,
         username: _usernameController.text,
         phone: _phoneController.text,
@@ -97,26 +116,44 @@ class _SignupScreenState extends State<SignupScreen> {
       );
 
       if (isSignedUp) {
-        var user = _databaseManager.getCurrentUser();
+        var user = FirebaseAuth.instance.currentUser;
 
         if (user != null && !user.emailVerified) {
-          await user.sendEmailVerification();
+          try {
+            await user.sendEmailVerification();
 
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Verification email sent! Please verify and log in.'),
+              ),
+            );
+
+            // Sign out the user after sending the verification email
+            //await _databaseManager.signOutUser();
+
+            // Navigate to HobbyQuiz after successful signup
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => HobbyQuiz(databaseManager: _databaseManager),
+              ),
+            );
+          } catch (e) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to send verification email: ${e.toString()}'),
+              ),
+            );
+          }
+        } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-                content:
-                    Text('Verification email sent! Please verify and log in.')),
-          );
-
-          await _databaseManager.signOutUser();
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-                builder: (context) =>
-                    HobbyQuiz(databaseManager: _databaseManager)),
+              content: Text('Failed to send verification email. Try again later.'),
+            ),
           );
         }
       }
+
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Signup failed: ${e.toString()}')),

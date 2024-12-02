@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:navbar/LoginPage/login_screen.dart';
-
 import '../../DatabaseManager.dart';
 
 class HobbyQuiz extends StatefulWidget {

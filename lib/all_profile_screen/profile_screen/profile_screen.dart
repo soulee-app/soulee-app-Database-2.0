@@ -29,7 +29,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // Firebase data holders with default values
   String _name = "Tanbir Hossain";
-  int _age = 24;
+  String _age = "24";
   String _secondaryTag = "Fur Parent";
   String _gender = "Male";
   String _birthday = "June 4";
@@ -47,21 +47,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _fetchProfileData() async {
     try {
-      // Use the existing userData from DatabaseManager
-      UserData userData = databaseManager.userData;
 
-      // Update state with fetched data
+      final userData = await databaseManager.fetchUserProfileData();
+
+      // Update state with the fetched data
       setState(() {
-        _name = userData.name ?? _name;
-        _age = userData.age ?? _age;
-        _secondaryTag = userData.secondaryTag ?? "Default Tag";
-        _gender = userData.gender ?? _gender;
-        _birthday = userData.dob?.toIso8601String() ?? _birthday;
+        _name = userData['name'] ?? _name;
+        _age = userData['age']?.toString() ?? _age;
+        _secondaryTag = userData['secondaryTag'] ?? "Default Tag";
+        _gender = userData['gender'] ?? _gender;
+        _birthday = userData['dob'] ?? _birthday;
 
-        // Include only profileImageUrl and avatarUrl in the profile images list
+        // Include profileImageUrl and avatarUrl in the profile images list
         _profileImages = [
-          if (userData.profileImageUrl != null) userData.profileImageUrl!,
-          if (userData.avatarUrl != null) userData.avatarUrl!,
+          if (userData['profile_image'] != null) userData['profile_image'],
+          if (userData['avatarUrl'] != null) userData['avatarUrl'],
         ];
 
         // Ensure fallback to default local images if no URLs provided
@@ -74,8 +74,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       });
     } catch (e) {
       print("Error fetching profile data: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to fetch profile data.")),
+        );
+      }
     }
   }
+
 
   @override
   void dispose() {

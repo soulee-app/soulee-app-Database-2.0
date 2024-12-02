@@ -68,16 +68,17 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _fetchPosts() async {
     try {
-      final fetchedPosts = await widget.databaseManager.fetchFeedPosts();
+      var fetchedPosts = await widget.databaseManager.fetchFeedPosts();
       setState(() {
         posts = fetchedPosts.map((postData) {
           return Post(
-            username: postData['username'] ?? 'Unknown User',
-            profilePic: postData['profilePic'] ?? 'assets/defImg.png',
-            caption: postData['caption'] ?? 'What a beautiful day!',
-            postImage:
-                postData['postImage'] ?? 'https://via.placeholder.com/300',
-            comments: List<String>.from(postData['comments'] ?? []),
+            username: postData['authorName'] ?? 'Unknown User', // Using 'userId' as username if no authorName field exists
+            profilePic: 'authorProfilePic', // Placeholder since no profilePic is included in addPost
+            caption: postData['text'] ?? 'No caption provided', // 'text' corresponds to the content field
+            postImage: postData['mediaUrls']?.isNotEmpty == true
+                ? postData['mediaUrls'][0] // Use first media URL
+                : 'https://www.pexels.com/photo/tourist-in-a-yellow-raincoat-taking-photos-in-the-rain-23656764/', // Fallback if no media is provided
+            comments: [], // Placeholder, comments are not fetched with posts
           );
         }).toList();
       });
@@ -85,6 +86,7 @@ class _MyHomePageState extends State<MyHomePage> {
       print("Error fetching posts: $e");
     }
   }
+
 
   void _showFloatingReactions(
       BuildContext context, int index, GlobalKey reactButtonKey) {
