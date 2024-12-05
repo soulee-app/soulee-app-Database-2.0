@@ -124,7 +124,8 @@ class _SignupScreenState extends State<SignupScreen> {
 
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Verification email sent! Please verify and log in.'),
+                content:
+                    Text('Verification email sent! Please verify and log in.'),
               ),
             );
 
@@ -135,25 +136,28 @@ class _SignupScreenState extends State<SignupScreen> {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                builder: (context) => HobbyQuiz(databaseManager: _databaseManager),
+                builder: (context) => HobbyQuiz(
+                  databaseManager: DatabaseManager(),
+                ),
               ),
             );
           } catch (e) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Failed to send verification email: ${e.toString()}'),
+                content:
+                    Text('Failed to send verification email: ${e.toString()}'),
               ),
             );
           }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Failed to send verification email. Try again later.'),
+              content:
+                  Text('Failed to send verification email. Try again later.'),
             ),
           );
         }
       }
-
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Signup failed: ${e.toString()}')),
