@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:navbar/DatabaseManager.dart';
 import 'package:navbar/Feed/dotIndicator.dart';
 import 'package:navbar/Notification/NotificationScreen.dart';
-import 'package:navbar/RunningPage/avaterPage/avaterPage.dart';
 import 'package:navbar/RunningPage/runningPage.dart';
 import 'package:navbar/knot/knotMatching.dart';
 import 'package:navbar/menu_page/menu_screen.dart';
@@ -26,7 +25,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
 
     _pages = [
-      AvatarSelectionPage(),
+      RunningPage(databaseManager: widget.databaseManager),
       NotificationScreen(databaseManager: widget.databaseManager),
       KnotMatchingPage(databaseManager: widget.databaseManager),
       DotIndicatorPage(databaseManager: widget.databaseManager),

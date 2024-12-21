@@ -243,7 +243,7 @@ class _HobbyQuizState extends State<HobbyQuiz> {
                       right: 0,
                       child: ElevatedButton(
                         onPressed: () {
-                          // Navigate to LoginScreen
+                          
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(

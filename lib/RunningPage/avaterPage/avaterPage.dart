@@ -42,30 +42,32 @@ class _AvatarSelectionPageState extends State<AvatarSelectionPage> {
     'assets/avatar4.png',
     'assets/avatar5.png',
     'assets/avatar6.png',
+    'assets/avatar7.png',
+    'assets/avatar8.png',
+    'assets/avatar9.png',
+    'assets/avatar10.png',
+    'assets/avatar11.png',
+    'assets/avatar12.png',
   ];
 
   String? selectedAvatarPath;
   bool isUploading = false;
 
-  // Convert asset image to a File
   Future<File> _getFileFromAsset(String assetPath) async {
-    final byteData = await rootBundle.load(assetPath); // Load asset as bytes
-    final tempDir = await getTemporaryDirectory(); // Get temp directory
-    final file = File(
-        '${tempDir.path}/${assetPath.split('/').last}'); // Save file in temp directory
-    await file.writeAsBytes(byteData.buffer.asUint8List(
-        byteData.offsetInBytes, byteData.lengthInBytes)); // Write bytes to file
+    final byteData = await rootBundle.load(assetPath);
+    final tempDir = await getTemporaryDirectory();
+    final file = File('${tempDir.path}/${assetPath.split('/').last}');
+    await file.writeAsBytes(byteData.buffer
+        .asUint8List(byteData.offsetInBytes, byteData.lengthInBytes));
     return file;
   }
 
-  // Upload selected avatar to Firebase Storage
   Future<void> uploadAvatarToFirebase(String assetPath) async {
     try {
       setState(() {
         isUploading = true;
       });
 
-      // Get the current user
       User? user = _auth.currentUser;
       if (user == null) {
         setState(() {
@@ -74,10 +76,8 @@ class _AvatarSelectionPageState extends State<AvatarSelectionPage> {
         return;
       }
 
-      // Convert asset to a File
       File file = await _getFileFromAsset(assetPath);
 
-      // Upload avatar to Firebase Storage
       String fileName =
           DateTime.now().millisecondsSinceEpoch.toString() + ".jpg";
       UploadTask uploadTask =
@@ -86,7 +86,6 @@ class _AvatarSelectionPageState extends State<AvatarSelectionPage> {
       TaskSnapshot taskSnapshot = await uploadTask;
       String downloadUrl = await taskSnapshot.ref.getDownloadURL();
 
-      // Save URL to Firestore
       await _firestore.collection('users').doc(user.uid).set({
         'avatarUrl': downloadUrl,
       }, SetOptions(merge: true));
@@ -95,7 +94,6 @@ class _AvatarSelectionPageState extends State<AvatarSelectionPage> {
         isUploading = false;
       });
 
-      // Navigate to login screen after upload
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => LoginScreen()),
@@ -108,7 +106,6 @@ class _AvatarSelectionPageState extends State<AvatarSelectionPage> {
     }
   }
 
-  // Select an avatar
   void selectAvatar(String assetPath) {
     setState(() {
       selectedAvatarPath = assetPath;
@@ -118,23 +115,11 @@ class _AvatarSelectionPageState extends State<AvatarSelectionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Select Avatar")),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Show progress indicator during upload
-            isUploading
-                ? CircularProgressIndicator()
-                : ElevatedButton(
-                    onPressed: selectedAvatarPath != null
-                        ? () => uploadAvatarToFirebase(selectedAvatarPath!)
-                        : null,
-                    child: Text("Upload Avatar"),
-                  ),
-            SizedBox(height: 20),
-
             // Grid of avatars
             Expanded(
               child: GridView.builder(
@@ -154,7 +139,7 @@ class _AvatarSelectionPageState extends State<AvatarSelectionPage> {
                         borderRadius: BorderRadius.circular(15),
                         border: Border.all(
                           color: selectedAvatarPath == avatarImages[index]
-                              ? Colors.blue
+                              ? const Color.fromARGB(255, 247, 41, 99)
                               : Colors.transparent,
                           width: 3,
                         ),
@@ -171,6 +156,33 @@ class _AvatarSelectionPageState extends State<AvatarSelectionPage> {
                 },
               ),
             ),
+            SizedBox(height: 20),
+
+            // Select Avatar button
+            isUploading
+                ? CircularProgressIndicator()
+                : SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      onPressed: selectedAvatarPath != null
+                          ? () => uploadAvatarToFirebase(selectedAvatarPath!)
+                          : null,
+                      child: Text(
+                        "Select Avatar",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
           ],
         ),
       ),

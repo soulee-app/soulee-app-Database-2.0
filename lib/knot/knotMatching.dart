@@ -47,7 +47,6 @@ class _KnotMatchingPageState extends State<KnotMatchingPage>
       final userId = databaseManager.userData.uid;
       if (userId == null) return;
 
-      // Fetch user data from DatabaseManager
       final userData = await databaseManager.fetchUserData(userId);
       setState(() {
         _userName = userData.name ?? 'Unknown User';
@@ -125,9 +124,18 @@ class _KnotMatchingPageState extends State<KnotMatchingPage>
       _flashVisible = false;
     });
 
-    // Navigate to MatchedPage after all animations
     await Future.delayed(const Duration(milliseconds: 200));
 
+    // Reset to initial state
+    setState(() {
+      _isAnimating = false;
+      _isInitialLayout = true;
+    });
+
+    // Reset the animation controller
+    _controller.reset();
+
+    // Navigate to MatchedPage after resetting
     Navigator.of(context).push(
       MaterialPageRoute(
           builder: (context) => MatchedPage(
@@ -296,17 +304,6 @@ class _KnotMatchingPageState extends State<KnotMatchingPage>
                             children: [
                               Icon(Icons.filter_list),
                               Text("FILTER"),
-                            ],
-                          ),
-                        ),
-                        ElevatedButton(
-                          onPressed: _handleKnotButtonPress,
-                          style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.redAccent),
-                          child: const Row(
-                            children: [
-                              Icon(Icons.link),
-                              Text("KNOT"),
                             ],
                           ),
                         ),
