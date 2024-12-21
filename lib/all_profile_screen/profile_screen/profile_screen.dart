@@ -1,7 +1,6 @@
 import 'package:dots_indicator/dots_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:navbar/DatabaseManager.dart';
-import 'package:navbar/UserData.dart';
 import 'package:navbar/all_profile_screen/profile_screen/postpage.dart';
 import 'package:navbar/all_profile_screen/profile_screen/second_slid_screen.dart';
 import 'package:navbar/all_profile_screen/profile_screen/widgets/custom_appbar.dart';
