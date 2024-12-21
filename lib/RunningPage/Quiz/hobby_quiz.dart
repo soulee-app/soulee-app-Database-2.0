@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:navbar/DatabaseManager.dart';
-import 'package:navbar/LoginPage/login_screen.dart';
 import 'package:navbar/RunningPage/avaterPage/avaterPage.dart';
 
 class HobbyQuiz extends StatefulWidget {
@@ -243,7 +242,6 @@ class _HobbyQuizState extends State<HobbyQuiz> {
                       right: 0,
                       child: ElevatedButton(
                         onPressed: () {
-                          
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(

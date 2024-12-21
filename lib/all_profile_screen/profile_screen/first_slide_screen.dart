@@ -65,7 +65,6 @@ class _FirstSlideScreenState extends State<FirstSlideScreen> {
   String _bookAuthor = "Unknown Author";
   String _bookImageUrl = 'assets/default_book_image.jpg';
 
-
   final TextEditingController _bioController = TextEditingController();
 
   @override
@@ -137,22 +136,22 @@ class _FirstSlideScreenState extends State<FirstSlideScreen> {
         // Fetch and update music, movie, and book data
         _music = userData?['music'] ?? 'Unknown Song';
         _musicArtist = userData?['musicArtist'] ?? 'Unknown Artist';
-        _musicImageUrl = userData?['musicImageUrl'] ?? 'assets/default_music_image.jpg';
+        _musicImageUrl =
+            userData?['musicImageUrl'] ?? 'assets/default_music_image.jpg';
 
         _movie = userData?['movie'] ?? 'Unknown Movie';
-        _movieImageUrl = userData?['movieImageUrl'] ?? 'assets/default_movie_image.jpg';
+        _movieImageUrl =
+            userData?['movieImageUrl'] ?? 'assets/default_movie_image.jpg';
 
         _book = userData?['book'] ?? 'Unknown Book';
         _bookAuthor = userData?['bookAuthor'] ?? 'Unknown Author';
-        _bookImageUrl = userData?['bookImageUrl'] ?? 'assets/default_book_image.jpg';
+        _bookImageUrl =
+            userData?['bookImageUrl'] ?? 'assets/default_book_image.jpg';
       });
     } catch (e) {
       print("Error fetching user data: $e");
     }
   }
-
-
-
 
   void _openMusicHome() async {
     final selectedSong = await Navigator.push(

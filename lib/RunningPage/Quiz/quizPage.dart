@@ -105,12 +105,11 @@ class QuizPage extends StatelessWidget {
   Widget buildNavButton(BuildContext context,
       {required String title,
       required String imagePath,
-      Widget? navigateTo, // Made nullable
+      Widget? navigateTo,
       required bool isRoundedLeft}) {
     return GestureDetector(
       onTap: navigateTo == null
           ? () {
-              // Action for canceled navigation (optional feedback)
               print("Navigation canceled for this button.");
             }
           : () {
@@ -119,39 +118,42 @@ class QuizPage extends StatelessWidget {
                 MaterialPageRoute(builder: (context) => navigateTo),
               );
             },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 0),
-        height: 120,
-        decoration: BoxDecoration(
-          borderRadius: isRoundedLeft
-              ? const BorderRadius.only(
-                  topLeft: Radius.circular(30),
-                  bottomLeft: Radius.circular(30),
-                )
-              : const BorderRadius.only(
-                  topRight: Radius.circular(30),
-                  bottomRight: Radius.circular(30),
-                ),
-          image: DecorationImage(
-            image: AssetImage(imagePath),
-            fit: BoxFit.cover,
+      child: Opacity(
+        opacity: navigateTo == null ? 0.2 : 1.0, // Set opacity for null quizzes
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 0),
+          height: 120,
+          decoration: BoxDecoration(
+            borderRadius: isRoundedLeft
+                ? const BorderRadius.only(
+                    topLeft: Radius.circular(30),
+                    bottomLeft: Radius.circular(30),
+                  )
+                : const BorderRadius.only(
+                    topRight: Radius.circular(30),
+                    bottomRight: Radius.circular(30),
+                  ),
+            image: DecorationImage(
+              image: AssetImage(imagePath),
+              fit: BoxFit.cover,
+            ),
           ),
-        ),
-        child: Align(
-          alignment: Alignment.center,
-          child: Text(
-            title,
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              shadows: [
-                Shadow(
-                  offset: Offset(2, 2),
-                  blurRadius: 5,
-                  color: Colors.black,
-                ),
-              ],
+          child: Align(
+            alignment: Alignment.center,
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                shadows: [
+                  Shadow(
+                    offset: Offset(2, 2),
+                    blurRadius: 5,
+                    color: Colors.black,
+                  ),
+                ],
+              ),
             ),
           ),
         ),
