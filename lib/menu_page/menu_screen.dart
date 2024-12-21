@@ -6,19 +6,51 @@ import 'package:navbar/menu_page/payment/paymentScreen.dart';
 import '../LoginPage/login_screen.dart';
 import 'package:navbar/DatabaseManager.dart'; // Import DatabaseManager
 
-class MenuScreen extends StatelessWidget {
-  final dynamic databaseManager;
+class MenuScreen extends StatefulWidget {
+  final DatabaseManager databaseManager;
 
   const MenuScreen({super.key, required this.databaseManager});
+
+  @override
+  State<MenuScreen> createState() => _MenuScreenState();
+}
+
+class _MenuScreenState extends State<MenuScreen> {
+  String _userName = 'User name';
+  String _profileImage = 'assets/default_profile.png';
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
+  }
+
+  Future<void> _fetchUserData() async {
+    try {
+      final userId = widget.databaseManager.auth.currentUser?.uid;
+      if (userId == null) return;
+
+      // Fetch user data from DatabaseManager
+      final userData = await widget.databaseManager.fetchUserData(userId);
+
+      setState(() {
+        _userName = userData.name ?? 'Unknown User';
+        _profileImage =
+            userData.profileImageUrl ?? 'assets/default_profile.png';
+      });
+    } catch (e) {
+      print("Error fetching user data: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final List<Map<String, dynamic>> items = [
       {
-        'image': 'assets/img.png',
+        'image': _profileImage,
         'isMask': true,
-        'isNetworkImage': false,
-        'text': 'Ayra Islam Mridul'
+        'isNetworkImage': true,
+        'text': _userName
       },
       {
         'image': 'assets/Settings.png',
@@ -72,15 +104,17 @@ class MenuScreen extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => ProfileScreen(
-                                  databaseManager: DatabaseManager(),
-                                )),
+                          builder: (context) => ProfileScreen(
+                            databaseManager: widget.databaseManager,
+                          ),
+                        ),
                       );
                     } else if (index == 4) {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => const PaymentScreen()),
+                          builder: (context) => PaymentScreen(),
+                        ),
                       );
                     } else if (index == 5) {
                       // Logout action
@@ -88,7 +122,8 @@ class MenuScreen extends StatelessWidget {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => const LoginScreen()),
+                          builder: (context) => const LoginScreen(),
+                        ),
                       );
                     }
                   },
@@ -102,9 +137,11 @@ class MenuScreen extends StatelessWidget {
                     ),
                   ),
                   title: Text(
-                    item['text']!,
+                    item['text'],
                     style: const TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.w500),
+                      fontSize: 20,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ),
