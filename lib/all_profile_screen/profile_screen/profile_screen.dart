@@ -48,7 +48,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _fetchProfileData() async {
     try {
-
       final userData = await databaseManager.fetchUserProfileData();
 
       // Update state with the fetched data
@@ -83,7 +82,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
     }
   }
-
 
   @override
   void dispose() {

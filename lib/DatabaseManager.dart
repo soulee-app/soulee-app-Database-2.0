@@ -77,10 +77,7 @@ class DatabaseManager {
   Future<void> logIn(User user) async {
     try {
       // Fetch and store user data locally
-      final userDoc = await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .get();
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
       if (userDoc.exists) {
         _userdata = UserData.fromMap(userDoc.data() as Map<String, dynamic>);
       } else {
@@ -181,12 +178,10 @@ class DatabaseManager {
     }
   }
 
-
   // Fetch posts for the feed
   Future<List<Map<String, dynamic>>> fetchFeedPosts() async {
     try {
       final userId = _auth.currentUser!.uid;
-      if (userId == null) throw Exception('User ID not found.');
 
       // Fetch the user's friend list
       final friendList = await getFriendList();
@@ -205,7 +200,8 @@ class DatabaseManager {
         final postData = doc.data();
 
         // Fetch the user data for the post's author
-        final userDoc = await _firestore.collection('users').doc(postData['userId']).get();
+        final userDoc =
+            await _firestore.collection('users').doc(postData['userId']).get();
         final userData = userDoc.exists ? userDoc.data() : null;
 
         posts.add({
@@ -221,13 +217,13 @@ class DatabaseManager {
     }
   }
 
-
   // Fetch posts for a user's profile
   Future<List<Map<String, dynamic>>> fetchProfilePosts(String userId) async {
     try {
       // Fetch posts from the user's profile
       final querySnapshot = await _firestore
-          .collection('posts') // Assuming posts are stored in a top-level collection
+          .collection(
+              'posts') // Assuming posts are stored in a top-level collection
           .where('userId', isEqualTo: userId)
           .orderBy('timestamp', descending: true)
           .get();
@@ -258,7 +254,8 @@ class DatabaseManager {
     try {
       // Fetch memories associated with the user's profile
       final querySnapshot = await _firestore
-          .collection('memory') // Assuming memories are stored in a top-level collection
+          .collection(
+              'memory') // Assuming memories are stored in a top-level collection
           .where('userId', isEqualTo: userId)
           .orderBy('timestamp', descending: true)
           .get();
@@ -284,8 +281,6 @@ class DatabaseManager {
       throw Exception('Failed to fetch profile memories: $e');
     }
   }
-
-
 
   // Like a post
   Future<void> likePost(String postId, String userId) async {
@@ -374,7 +369,8 @@ class DatabaseManager {
       memoryData['imageUrl'] = imageUrl;
       memoryData['userId'] = userId;
       memoryData['timestamp'] = FieldValue.serverTimestamp();
-      memoryData['visibility'] = memoryData['visibility'] ?? 'Everyone'; // Default
+      memoryData['visibility'] =
+          memoryData['visibility'] ?? 'Everyone'; // Default
 
       // Save memory data to Firestore
       await _firestore.collection('memory').add(memoryData);
@@ -384,7 +380,6 @@ class DatabaseManager {
     }
   }
 
-
   // Fetch memories for a user's profile page
   Future<List<Map<String, dynamic>>> fetchMemories(String userId,
       {String visibility = 'Everyone'}) async {
@@ -392,20 +387,18 @@ class DatabaseManager {
       final querySnapshot = await _firestore
           .collection('memory')
           .where('userId', isEqualTo: userId)
-          .where('visibility', isEqualTo: visibility) // Optional visibility filter
+          .where('visibility',
+              isEqualTo: visibility) // Optional visibility filter
           .orderBy('timestamp', descending: true)
           .get();
 
       // Map documents to list of memory data
-      return querySnapshot.docs
-          .map((doc) => doc.data() as Map<String, dynamic>)
-          .toList();
+      return querySnapshot.docs.map((doc) => doc.data()).toList();
     } catch (e) {
       print('Error in fetchMemories: $e'); // Log error for debugging
       throw Exception('Failed to fetch memories: $e');
     }
   }
-
 
   // Update user profile bio
   Future<void> updateUserProfileBio(String bio) async {
@@ -507,8 +500,10 @@ class DatabaseManager {
 
       // Fetch zones
       final zonesSnapshot = await _firestore
-          .collection('zones') // Assume zones are stored in a central 'zones' collection
-          .where('members', arrayContains: userId) // Check if the user is a member
+          .collection(
+              'zones') // Assume zones are stored in a central 'zones' collection
+          .where('members',
+              arrayContains: userId) // Check if the user is a member
           .orderBy('createdAt', descending: true)
           .limit(10)
           .get();
@@ -525,12 +520,13 @@ class DatabaseManager {
       final friendIds = friendList.map((friend) => friend['friendId']).toList();
       final postsSnapshot = await _firestore
           .collection('posts')
-          .where('userId', whereIn: [userId, ...friendIds]) // User's and friends' posts
+          .where('userId',
+              whereIn: [userId, ...friendIds]) // User's and friends' posts
           .orderBy('timestamp', descending: true)
           .limit(10)
           .get();
       secondSlideData['feedPosts'] =
-          postsSnapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+          postsSnapshot.docs.map((doc) => doc.data()).toList();
 
       return secondSlideData;
     } catch (e) {
@@ -768,5 +764,4 @@ class DatabaseManager {
       throw Exception("Failed to fetch user profile data: $e");
     }
   }
-
 }

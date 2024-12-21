@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:navbar/DatabaseManager.dart';
 import 'package:navbar/LoginPage/login_screen.dart';
-import '../../DatabaseManager.dart';
+import 'package:navbar/RunningPage/avaterPage/avaterPage.dart';
 
 class HobbyQuiz extends StatefulWidget {
-  final DatabaseManager databaseManager;
-
-  const HobbyQuiz({super.key, required this.databaseManager});
+  const HobbyQuiz({super.key, required DatabaseManager databaseManager});
 
   @override
   State<HobbyQuiz> createState() => _HobbyQuizState();
 }
 
 class _HobbyQuizState extends State<HobbyQuiz> {
-  late DatabaseManager databaseManager;
-
   bool isQuizStarted = false;
   final List<Map<String, Object>> _questions = [
     {
@@ -182,12 +181,6 @@ class _HobbyQuizState extends State<HobbyQuiz> {
   bool _isQuizCompleted = false;
   String _mainHobby = '';
 
-  @override
-  void initState() {
-    super.initState();
-    databaseManager = widget.databaseManager;
-  }
-
   void _answerQuestion(String type) {
     setState(() {
       _score[type] = _score[type]! + 1;
@@ -196,7 +189,8 @@ class _HobbyQuizState extends State<HobbyQuiz> {
       if (_questionIndex >= _questions.length) {
         _isQuizCompleted = true;
         _mainHobby = _getMainHobby();
-        _updateMainTag(_mainHobby);
+        _updateMainTagInFirebase(
+            _mainHobby); // Update Firebase with the main tag
       }
     });
   }
@@ -207,12 +201,19 @@ class _HobbyQuizState extends State<HobbyQuiz> {
     return sortedEntries.first.key;
   }
 
-  Future<void> _updateMainTag(String mainHobby) async {
+  Future<void> _updateMainTagInFirebase(String mainHobby) async {
     try {
-      await databaseManager.updateUserMainTag(mainTag: mainHobby);
-      print("Main tag updated to $mainHobby.");
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final userDoc =
+            FirebaseFirestore.instance.collection('users').doc(user.uid);
+        await userDoc.update({'mainTag': mainHobby});
+        print("Main tag updated to $mainHobby in Firebase.");
+      } else {
+        print("No user is signed in.");
+      }
     } catch (e) {
-      print("Error updating mainTag: $e");
+      print("Error updating mainTag in Firebase: $e");
     }
   }
 
@@ -224,27 +225,29 @@ class _HobbyQuizState extends State<HobbyQuiz> {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
     return Scaffold(
       body: !isQuizStarted
           ? const Stack(
               children: [
-                // Add start quiz background and button UI
+                // Background image and Start Quiz button here
               ],
             )
           : _isQuizCompleted
               ? Stack(
                   children: [
-                    // Display quiz result and confirm button
+                    // Show result and Confirm button here
                     Positioned(
                       bottom: 140,
                       left: 0,
                       right: 0,
                       child: ElevatedButton(
                         onPressed: () {
+                          // Navigate to LoginScreen
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => const LoginScreen()),
+                                builder: (context) => AvatarSelectionPage()),
                           );
                         },
                         style: ElevatedButton.styleFrom(
@@ -262,44 +265,37 @@ class _HobbyQuizState extends State<HobbyQuiz> {
                 )
               : Column(
                   children: [
+                    // Quiz question display here
                     Expanded(
                       child: Column(
-                        children: [
-                          Text(
-                            _questions[_questionIndex]['question'] as String,
-                            style: const TextStyle(fontSize: 18),
-                          ),
-                          const SizedBox(height: 20),
-                          ...(_questions[_questionIndex]['answers']
-                                  as List<Map<String, Object>>)
-                              .map((answer) {
-                            return Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 8.0),
-                              child: SizedBox(
-                                width: double.infinity,
-                                height: 40,
-                                child: ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    alignment: Alignment.centerLeft,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(0),
-                                      side: const BorderSide(
-                                          color: Colors.black, width: 0.1),
-                                    ),
-                                    textStyle: const TextStyle(fontSize: 15),
-                                    foregroundColor: Colors.black,
-                                    backgroundColor: Colors.transparent,
-                                    shadowColor: Colors.transparent,
+                        children: (_questions[_questionIndex]['answers']
+                                as List<Map<String, Object>>)
+                            .map((answer) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: SizedBox(
+                              width: double.infinity,
+                              height: 40,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  alignment: Alignment.centerLeft,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(0),
+                                    side: const BorderSide(
+                                        color: Colors.black, width: 0.1),
                                   ),
-                                  onPressed: () =>
-                                      _answerQuestion(answer['type'] as String),
-                                  child: Text(answer['text'] as String),
+                                  textStyle: const TextStyle(fontSize: 15),
+                                  foregroundColor: Colors.black,
+                                  backgroundColor: Colors.transparent,
+                                  shadowColor: Colors.transparent,
                                 ),
+                                onPressed: () =>
+                                    _answerQuestion(answer['type'] as String),
+                                child: Text(answer['text'] as String),
                               ),
-                            );
-                          }).toList(),
-                        ],
+                            ),
+                          );
+                        }).toList(),
                       ),
                     ),
                   ],
